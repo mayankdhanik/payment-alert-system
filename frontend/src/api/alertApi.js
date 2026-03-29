@@ -5,7 +5,9 @@ import axios from 'axios'
  * Vite proxy forwards /api/* → http://localhost:8080
  */
 const api = axios.create({
-  baseURL: 'https://payment-alert-system.onrender.com/api',
+  baseURL: import.meta.env.PROD
+    ? 'https://payment-alert-system.onrender.com/api'
+    : '/api',
   headers: { 'Content-Type': 'application/json' },
   timeout: 60000
 })

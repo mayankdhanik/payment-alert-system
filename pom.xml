@@ -62,23 +62,24 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!--
-            Oracle JDBC driver — uncomment if connecting to Oracle DB.
-            Download ojdbc11.jar from Oracle and install into local Maven repo:
-              mvn install:install-file -Dfile=ojdbc11.jar
-                -DgroupId=com.oracle.database.jdbc
-                -DartifactId=ojdbc11 -Dversion=21.1.0.0 -Dpackaging=jar
+        <!-- Oracle JDBC Driver -->
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc11</artifactId>
-            <version>21.1.0.0</version>
+            <version>21.9.0.0</version>
         </dependency>
-        -->
 
         <!-- H2 In-Memory Database — zero-install, perfect for local demo/portfolio -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- PostgreSQL driver — for Supabase/production DB -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
