@@ -4,10 +4,8 @@ import axios from 'axios'
  * Axios instance — all calls go to Spring Boot backend at :8080
  * Vite proxy forwards /api/* → http://localhost:8080
  */
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://payment-alert-system.onrender.com'
-
 const api = axios.create({
-  baseURL: `${BACKEND_URL}/api`,
+  baseURL: 'https://payment-alert-system.onrender.com/api',
   headers: { 'Content-Type': 'application/json' },
   timeout: 15000
 })
