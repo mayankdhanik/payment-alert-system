@@ -173,31 +173,41 @@ public class AlertServiceImpl implements AlertService {
 
     private String buildSmsText(AlertRequest req, String fullMessage) {
         String type = req.getPaymentType().name();
-        String txn = req.getTxnRefNo();
-        String maskedAc = maskAccountNumber(req.getDrAcNo());
+        // For IMPS, RRN is the primary reference; fallback to txnRefNo
+        boolean isImps = req.getPaymentType() == AlertLog.PaymentType.IMPS;
+        String ref = (isImps && req.getRrn() != null && !req.getRrn().isBlank())
+                ? req.getRrn() : req.getTxnRefNo();
+        String refLabel = isImps ? "RRN" : "TXN Ref";
+        String maskedDr = maskAccountNumber(req.getDrAcNo());
+        String maskedCr = maskAccountNumber(req.getCrAcNo());
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MMM-yy"));
 
         return switch (req.getAlertType()) {
             case DR -> String.format(
-                    "INR %s debited from A/c %s on %s via %s. TXN Ref: %s.",
-                    req.getAmount(), maskedAc != null ? maskedAc : "XXXXXX", date, type, txn);
+                    "INR %s debited from A/c %s on %s via %s. %s: %s.",
+                    req.getAmount(), maskedDr != null ? maskedDr : "XXXXXX", date, type, refLabel, ref);
             case CR -> String.format(
-                    "INR %s credited to A/c %s on %s via %s. TXN Ref: %s.",
-                    req.getAmount(), maskAccountNumber(req.getCrAcNo()) != null ? maskAccountNumber(req.getCrAcNo()) : "XXXXXX", date, type, txn);
+                    "INR %s credited to A/c %s on %s via %s. %s: %s.",
+                    req.getAmount(), maskedCr != null ? maskedCr : "XXXXXX", date, type, refLabel, ref);
             case FAILURE -> String.format(
-                    "INR %s %s txn (Ref: %s) FAILED on %s. Reversal in 2-3 working days.",
-                    req.getAmount(), type, txn, date);
+                    "INR %s %s txn (%s: %s) FAILED on %s. Reversal in 2-3 working days.",
+                    req.getAmount(), type, refLabel, ref, date);
         };
     }
 
     private String buildEmailSubject(AlertRequest req) {
+        boolean isImps = req.getPaymentType() == AlertLog.PaymentType.IMPS;
+        String ref = (isImps && req.getRrn() != null && !req.getRrn().isBlank())
+                ? req.getRrn() : req.getTxnRefNo();
+        String refLabel = isImps ? "RRN" : "TXN";
+
         return switch (req.getAlertType()) {
-            case DR -> String.format("[%s DEBIT ALERT] TXN %s | %s %s",
-                    req.getPaymentType(), req.getTxnRefNo(), req.getCurrency(), req.getAmount());
-            case CR -> String.format("[%s CREDIT ALERT] TXN %s | %s %s",
-                    req.getPaymentType(), req.getTxnRefNo(), req.getCurrency(), req.getAmount());
-            case FAILURE -> String.format("[%s FAILURE ALERT] TXN %s | %s %s",
-                    req.getPaymentType(), req.getTxnRefNo(), req.getCurrency(), req.getAmount());
+            case DR -> String.format("[%s DEBIT ALERT] %s %s | %s %s",
+                    req.getPaymentType(), refLabel, ref, req.getCurrency(), req.getAmount());
+            case CR -> String.format("[%s CREDIT ALERT] %s %s | %s %s",
+                    req.getPaymentType(), refLabel, ref, req.getCurrency(), req.getAmount());
+            case FAILURE -> String.format("[%s FAILURE ALERT] %s %s | %s %s",
+                    req.getPaymentType(), refLabel, ref, req.getCurrency(), req.getAmount());
         };
     }
 

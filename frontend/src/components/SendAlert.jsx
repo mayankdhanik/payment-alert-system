@@ -22,13 +22,17 @@ function buildPreview(f) {
   const masked = (ac) => ac ? 'X'.repeat(Math.max(0, ac.length - 4)) + ac.slice(-4) : 'N/A'
   const ts = new Date().toLocaleString('en-IN')
 
+  const isImps = f.paymentType === 'IMPS'
+  const ref = isImps ? (f.rrn || 'XXXXXX') : (f.txnRefNo || 'XXXXXX')
+  const refLabel = isImps ? 'RRN' : `${f.paymentType} Ref`
+
   if (f.alertType === 'DR') {
-    return `Dear Customer ${f.customerNo}, Your A/c ${masked(f.drAcNo)} has been debited with ${f.currency} ${Number(f.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} on ${ts}. ${f.paymentType} Ref: ${f.txnRefNo || 'XXXXXX'}. If not done by you, call 1800-XXX-XXXX.`
+    return `Dear Customer ${f.customerNo}, Your A/c ${masked(f.drAcNo)} has been debited with ${f.currency} ${Number(f.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} on ${ts}. ${refLabel}: ${ref}. If not done by you, call 1800-XXX-XXXX.`
   }
   if (f.alertType === 'CR') {
-    return `Dear Customer ${f.customerNo}, Your A/c ${masked(f.crAcNo)} has been credited with ${f.currency} ${Number(f.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} on ${ts}. ${f.paymentType} Ref: ${f.txnRefNo || 'XXXXXX'}. Sender: ${masked(f.drAcNo)}.`
+    return `Dear Customer ${f.customerNo}, Your A/c ${masked(f.crAcNo)} has been credited with ${f.currency} ${Number(f.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} on ${ts}. ${refLabel}: ${ref}. Sender: ${masked(f.drAcNo)}.`
   }
-  return `Dear Customer ${f.customerNo}, Your ${f.paymentType} of ${f.currency} ${Number(f.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (Ref: ${f.txnRefNo || 'XXXXXX'}) on ${ts} has FAILED. Amount will reverse in 2-3 working days.`
+  return `Dear Customer ${f.customerNo}, Your ${f.paymentType} of ${f.currency} ${Number(f.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${refLabel}: ${ref}) on ${ts} has FAILED. Amount will reverse in 2-3 working days.`
 }
 
 const paymentTypes = ['NEFT', 'IMPS', 'RTGS']
@@ -148,9 +152,19 @@ export default function SendAlert() {
                   onChange={handleChange} placeholder="e.g. CUST001234" required />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>TXN Ref No <span style={{ color: 'red' }}>*</span></label>
-                <input className="form-control form-control-sm" name="txnRefNo" value={form.txnRefNo}
-                  onChange={handleChange} placeholder="e.g. SBIN0001234" required />
+                <label style={labelStyle}>
+                  TXN Ref No
+                  {form.paymentType !== 'IMPS' && <span style={{ color: 'red' }}> *</span>}
+                  {form.paymentType === 'IMPS' && <span style={{ color: '#999', fontWeight: '400' }}> (optional for IMPS)</span>}
+                </label>
+                <input
+                  className="form-control form-control-sm"
+                  name="txnRefNo"
+                  value={form.txnRefNo}
+                  onChange={handleChange}
+                  placeholder={form.paymentType === 'IMPS' ? 'Optional — RRN used instead' : 'e.g. SBIN0001234'}
+                  required={form.paymentType !== 'IMPS'}
+                />
               </div>
             </div>
 
@@ -200,11 +214,28 @@ export default function SendAlert() {
               </div>
             </div>
 
-            {/* RRN */}
+            {/* RRN — mandatory for IMPS, optional for NEFT/RTGS */}
             <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>RRN / UTR No</label>
-              <input className="form-control form-control-sm" name="rrn" value={form.rrn}
-                onChange={handleChange} placeholder="Retrieval Reference / UTR Number" />
+              <label style={labelStyle}>
+                RRN {form.paymentType === 'IMPS' && <span style={{ color: 'red' }}>*</span>}
+                {form.paymentType === 'NEFT' && <span style={{ color: '#999', fontWeight: '400' }}> (UTR - optional)</span>}
+                {form.paymentType === 'RTGS' && <span style={{ color: '#999', fontWeight: '400' }}> (UTR - optional)</span>}
+              </label>
+              <input
+                className="form-control form-control-sm"
+                name="rrn"
+                value={form.rrn}
+                onChange={handleChange}
+                placeholder={form.paymentType === 'IMPS' ? 'RRN is mandatory for IMPS' : 'Retrieval Reference / UTR Number'}
+                required={form.paymentType === 'IMPS'}
+                style={{ borderColor: form.paymentType === 'IMPS' && !form.rrn ? '#dc3545' : '' }}
+              />
+              {form.paymentType === 'IMPS' && !form.rrn && (
+                <div style={{ fontSize: '11px', color: '#dc3545', marginTop: '4px' }}>
+                  <i className="bi bi-exclamation-circle me-1" />
+                  RRN is mandatory for IMPS transactions
+                </div>
+              )}
             </div>
 
             {/* Custom Message (optional) */}

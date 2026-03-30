@@ -41,8 +41,8 @@ public class AlertRequest {
     @NotNull(message = "Payment type is required")
     private AlertLog.PaymentType paymentType;
 
-    @NotBlank(message = "Transaction reference number is required")
-    @Size(min = 6, max = 50, message = "TXN Ref No must be between 6 and 50 characters")
+    // For NEFT/RTGS: required. For IMPS: optional (RRN is used instead)
+    @Size(max = 50, message = "TXN Ref No must not exceed 50 characters")
     private String txnRefNo;
 
     @NotNull(message = "Amount is required")
@@ -64,6 +64,7 @@ public class AlertRequest {
     @Size(max = 25, message = "Credit account number must not exceed 25 characters")
     private String crAcNo;
 
+    // For IMPS: mandatory primary reference. For NEFT/RTGS: optional.
     @Size(max = 25, message = "RRN must not exceed 25 characters")
     private String rrn;
 

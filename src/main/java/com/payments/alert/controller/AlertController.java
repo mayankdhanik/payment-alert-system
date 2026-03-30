@@ -3,6 +3,9 @@ package com.payments.alert.controller;
 import com.payments.alert.model.AlertLog;
 import com.payments.alert.model.AlertRequest;
 import com.payments.alert.service.AlertService;
+import com.payments.alert.service.ImpsAlertService;
+import com.payments.alert.service.NeftAlertService;
+import com.payments.alert.service.RtgsAlertService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,12 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * REST controller exposing all alert-related endpoints.
- * React frontend calls these via Axios.
- *
- * Base URL: /api/alerts
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/alerts")
@@ -26,17 +23,25 @@ import java.util.Map;
 public class AlertController {
 
     private final AlertService alertService;
+    private final NeftAlertService neftAlertService;
+    private final ImpsAlertService impsAlertService;
+    private final RtgsAlertService rtgsAlertService;
 
-    // -------------------------------------------------------
-    // POST /api/alerts/send
-    // Send a new payment alert (NEFT / IMPS / RTGS)
-    // -------------------------------------------------------
     @PostMapping("/send")
     public ResponseEntity<Map<String, Object>> sendAlert(@Valid @RequestBody AlertRequest request) {
         log.info("Received alert request: type={}, customer={}, txnRef={}",
                 request.getPaymentType(), request.getCustomerNo(), request.getTxnRefNo());
 
-        AlertLog result = alertService.sendAlert(request);
+        AlertLog result;
+        if (request.getPaymentType() == AlertLog.PaymentType.IMPS) {
+            result = impsAlertService.processImpsAlert(request);
+        } else if (request.getPaymentType() == AlertLog.PaymentType.NEFT) {
+            result = neftAlertService.processNeftAlert(request);
+        } else if (request.getPaymentType() == AlertLog.PaymentType.RTGS) {
+            result = rtgsAlertService.processRtgsAlert(request);
+        } else {
+            result = alertService.sendAlert(request);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", result.getAlertStatus() == AlertLog.AlertStatus.SENT);

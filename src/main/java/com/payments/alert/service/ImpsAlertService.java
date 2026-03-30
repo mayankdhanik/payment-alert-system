@@ -36,7 +36,17 @@ public class ImpsAlertService {
      * then delegates to the core AlertService for persistence + dispatch.
      */
     public AlertLog processImpsAlert(AlertRequest request) {
-        log.info("Processing IMPS alert: txnRef={}, type={}", request.getTxnRefNo(), request.getAlertType());
+        // RRN is mandatory for IMPS
+        if (request.getRrn() == null || request.getRrn().isBlank()) {
+            throw new IllegalArgumentException("RRN is mandatory for IMPS transactions");
+        }
+
+        // For IMPS, use RRN as the primary txnRefNo (used for DB unique key)
+        if (request.getTxnRefNo() == null || request.getTxnRefNo().isBlank()) {
+            request.setTxnRefNo(request.getRrn());
+        }
+
+        log.info("Processing IMPS alert: RRN={}, type={}", request.getRrn(), request.getAlertType());
 
         request.setPaymentType(AlertLog.PaymentType.IMPS);
 
